@@ -1,5 +1,5 @@
 [package]
-name = "fsm-finder-ui"
+name = "s3-finder-ui"
 version = "0.1.0"
 edition = "2021"
 
