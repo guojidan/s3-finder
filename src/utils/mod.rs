@@ -1,2 +1,2 @@
-pub mod tauri;
 pub mod format;
+pub mod tauri;

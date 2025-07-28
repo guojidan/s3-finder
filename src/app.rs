@@ -1,14 +1,16 @@
 use leptos::task::spawn_local;
-use leptos::{ev::{MouseEvent, KeyboardEvent}, prelude::*};
+use leptos::{
+    ev::{KeyboardEvent, MouseEvent},
+    prelude::*,
+};
 use wasm_bindgen::JsValue;
-use web_sys;
 
 // Import our modules
-use crate::types::*;
-use crate::utils::tauri::{invoke, is_tauri_available};
-use crate::utils::format::format_file_size;
 use crate::components::file_icon::FileIcon;
 use crate::services::file_service::*;
+use crate::types::*;
+use crate::utils::format::format_file_size;
+use crate::utils::tauri::{invoke, is_tauri_available};
 
 #[derive(Clone, Debug)]
 pub struct ColumnData {
@@ -34,28 +36,31 @@ pub fn App() -> impl IntoView {
     let (show_rename_dialog, set_show_rename_dialog) = signal(false);
     let (rename_item_name, set_rename_item_name) = signal(String::new());
     let (rename_item_path, set_rename_item_path) = signal(String::new());
-    
+
     // Copy/Move states
     let (clipboard_item, set_clipboard_item) = signal(Option::<String>::None);
     let (clipboard_operation, set_clipboard_operation) = signal(Option::<String>::None); // "copy" or "cut"
-    
+
     // Search states
     let (search_query, set_search_query) = signal(String::new());
     let (search_results, set_search_results) = signal(Option::<Vec<FileItem>>::None);
     let (searching, set_searching) = signal(false);
     let (search_mode, set_search_mode) = signal(false);
-    
+
     // Preview states
     // let (show_preview, set_show_preview) = signal(false);
     let (preview_content, set_preview_content) = signal(Option::<FilePreview>::None);
     let (preview_loading, set_preview_loading) = signal(false);
     let (preview_error, set_preview_error) = signal(Option::<String>::None);
-    
+
     // Zoom states
     let (zoom_level, set_zoom_level) = signal(1.0f64);
     let min_zoom = 0.5f64;
     let max_zoom = 2.0f64;
     let zoom_step = 0.1f64;
+
+    // Theme states
+    let (theme, set_theme) = signal("auto".to_string()); // "light", "dark", "auto"
 
     // Load directory and add to columns
     let load_directory_column = move |path: String, column_index: Option<usize>| {
@@ -63,7 +68,15 @@ pub fn App() -> impl IntoView {
         set_loading.set(true);
         spawn_local(async move {
             if is_tauri_available() {
-                match invoke("read_directory", serde_wasm_bindgen::to_value(&ReadDirArgs { path: path_clone.clone() }).unwrap()).await {
+                match invoke(
+                    "read_directory",
+                    serde_wasm_bindgen::to_value(&ReadDirArgs {
+                        path: path_clone.clone(),
+                    })
+                    .unwrap(),
+                )
+                .await
+                {
                     Ok(result) => {
                         match serde_wasm_bindgen::from_value::<DirectoryContents>(result) {
                             Ok(contents) => {
@@ -71,11 +84,17 @@ pub fn App() -> impl IntoView {
                                     if let Some(index) = column_index {
                                         // Replace from this column onwards
                                         cols.truncate(index);
-                                        cols.push(ColumnData { path: path_clone.clone(), contents });
+                                        cols.push(ColumnData {
+                                            path: path_clone.clone(),
+                                            contents,
+                                        });
                                         index
                                     } else {
                                         // Add new column
-                                        cols.push(ColumnData { path: path_clone.clone(), contents });
+                                        cols.push(ColumnData {
+                                            path: path_clone.clone(),
+                                            contents,
+                                        });
                                         cols.len() - 1
                                     }
                                 });
@@ -84,11 +103,15 @@ pub fn App() -> impl IntoView {
                                 // Set focus to the new/updated column
                                 set_selected_column_index.set(Some(new_col_index));
                                 set_selected_item.set(None);
-                                
+
                                 // Auto-scroll to the rightmost column
                                 if let Some(window) = web_sys::window() {
                                     if let Some(document) = window.document() {
-                                        if let Some(container) = document.query_selector(".columns-container").ok().flatten() {
+                                        if let Some(container) = document
+                                            .query_selector(".columns-container")
+                                            .ok()
+                                            .flatten()
+                                        {
                                             let container: web_sys::Element = container;
                                             container.set_scroll_left(container.scroll_width());
                                         }
@@ -96,23 +119,29 @@ pub fn App() -> impl IntoView {
                                 }
                             }
                             Err(e) => {
-                                set_error_msg.set(Some(format!("Failed to parse directory contents: {}", e)));
+                                set_error_msg.set(Some(format!(
+                                    "Failed to parse directory contents: {e}"
+                                )));
                             }
                         }
                     }
                     Err(e) => {
-                        set_error_msg.set(Some(format!("Failed to load directory: {:?}", e)));
+                        set_error_msg.set(Some(format!("Failed to load directory: {e:?}")));
                     }
                 }
             } else {
                 // Browser environment - use mock data
                 let mock_contents = DirectoryContents {
                     current_path: path_clone.clone(),
-                    parent_path: if path_clone == "/" { None } else { Some("/".to_string()) },
+                    parent_path: if path_clone == "/" {
+                        None
+                    } else {
+                        Some("/".to_string())
+                    },
                     items: vec![
                         FileItem {
                             name: "Documents".to_string(),
-                            path: format!("{}/Documents", path_clone),
+                            path: format!("{path_clone}/Documents"),
                             is_dir: true,
                             size: None,
                             modified: Some("2024-01-15".to_string()),
@@ -120,7 +149,7 @@ pub fn App() -> impl IntoView {
                         },
                         FileItem {
                             name: "example.txt".to_string(),
-                            path: format!("{}/example.txt", path_clone),
+                            path: format!("{path_clone}/example.txt"),
                             is_dir: false,
                             size: Some(1024),
                             modified: Some("2024-01-15".to_string()),
@@ -128,14 +157,20 @@ pub fn App() -> impl IntoView {
                         },
                     ],
                 };
-                
+
                 let new_col_index = set_columns.update_untracked(|cols| {
                     if let Some(index) = column_index {
                         cols.truncate(index);
-                        cols.push(ColumnData { path: path_clone.clone(), contents: mock_contents });
+                        cols.push(ColumnData {
+                            path: path_clone.clone(),
+                            contents: mock_contents,
+                        });
                         index
                     } else {
-                        cols.push(ColumnData { path: path_clone.clone(), contents: mock_contents });
+                        cols.push(ColumnData {
+                            path: path_clone.clone(),
+                            contents: mock_contents,
+                        });
                         cols.len() - 1
                     }
                 });
@@ -144,11 +179,13 @@ pub fn App() -> impl IntoView {
                 // Set focus to the new/updated column
                 set_selected_column_index.set(Some(new_col_index));
                 set_selected_item.set(None);
-                
+
                 // Auto-scroll to the rightmost column
                 if let Some(window) = web_sys::window() {
                     if let Some(document) = window.document() {
-                        if let Some(container) = document.query_selector(".columns-container").ok().flatten() {
+                        if let Some(container) =
+                            document.query_selector(".columns-container").ok().flatten()
+                        {
                             let container: web_sys::Element = container;
                             container.set_scroll_left(container.scroll_width());
                         }
@@ -181,13 +218,29 @@ pub fn App() -> impl IntoView {
         });
     });
 
+    // Theme management effect
+    Effect::new(move |_| {
+        let current_theme = theme.get();
+        if let Some(window) = web_sys::window() {
+            if let Some(document) = window.document() {
+                if let Some(body) = document.body() {
+                    // Set the data-theme attribute on the body
+                    let _ = body.set_attribute("data-theme", &current_theme);
+                }
+            }
+        }
+    });
+
     // Auto-preview effect when item is selected
     Effect::new(move |_| {
         if let Some(selected_path) = selected_item.get() {
             // Check if the selected item is a file (not a directory)
             let is_file = if let Some(col_index) = selected_column_index.get() {
                 if let Some(column) = columns.get().get(col_index) {
-                    column.contents.items.iter()
+                    column
+                        .contents
+                        .items
+                        .iter()
                         .find(|item| item.path == selected_path)
                         .map(|item| !item.is_dir)
                         .unwrap_or(false)
@@ -195,7 +248,8 @@ pub fn App() -> impl IntoView {
                     false
                 }
             } else if let Some(search_results) = search_results.get() {
-                search_results.iter()
+                search_results
+                    .iter()
                     .find(|item| item.path == selected_path)
                     .map(|item| !item.is_dir)
                     .unwrap_or(false)
@@ -210,8 +264,9 @@ pub fn App() -> impl IntoView {
                         selected_path,
                         set_preview_content,
                         set_preview_loading,
-                        set_preview_error
-                    ).await;
+                        set_preview_error,
+                    )
+                    .await;
                 });
             } else {
                 // Clear preview for directories - don't show preview for directories
@@ -261,24 +316,29 @@ pub fn App() -> impl IntoView {
     // Navigation helper functions
     // Scroll to focused item
     let scroll_to_focused_item = move || {
-        if let Some(_) = focused_item.get() {
+        if focused_item.get().is_some() {
             if let Some(col_index) = focused_column_index.get() {
                 spawn_local(async move {
                     // Wait a bit for DOM to update
-                    wasm_bindgen_futures::JsFuture::from(
-                        js_sys::Promise::new(&mut |resolve, _| {
+                    wasm_bindgen_futures::JsFuture::from(js_sys::Promise::new(
+                        &mut |resolve, _| {
                             web_sys::window()
                                 .unwrap()
                                 .set_timeout_with_callback_and_timeout_and_arguments_0(&resolve, 50)
                                 .unwrap();
-                        })
-                    ).await.unwrap();
-                    
+                        },
+                    ))
+                    .await
+                    .unwrap();
+
                     if let Some(window) = web_sys::window() {
                         if let Some(document) = window.document() {
                             // Find the focused item element
-                            let selector = format!(".column:nth-child({}) .file-item.focused", col_index + 1);
-                            if let Some(focused_element) = document.query_selector(&selector).ok().flatten() {
+                            let selector =
+                                format!(".column:nth-child({}) .file-item.focused", col_index + 1);
+                            if let Some(focused_element) =
+                                document.query_selector(&selector).ok().flatten()
+                            {
                                 // Scroll the focused item into view with smooth behavior
                                 focused_element.scroll_into_view_with_bool(true);
                             }
@@ -293,18 +353,20 @@ pub fn App() -> impl IntoView {
     let scroll_to_rightmost_column = move || {
         spawn_local(async move {
             // Wait a bit for DOM to update
-            wasm_bindgen_futures::JsFuture::from(
-                js_sys::Promise::new(&mut |resolve, _| {
-                    web_sys::window()
-                        .unwrap()
-                        .set_timeout_with_callback_and_timeout_and_arguments_0(&resolve, 100)
-                        .unwrap();
-                })
-            ).await.unwrap();
-            
+            wasm_bindgen_futures::JsFuture::from(js_sys::Promise::new(&mut |resolve, _| {
+                web_sys::window()
+                    .unwrap()
+                    .set_timeout_with_callback_and_timeout_and_arguments_0(&resolve, 100)
+                    .unwrap();
+            }))
+            .await
+            .unwrap();
+
             if let Some(window) = web_sys::window() {
                 if let Some(document) = window.document() {
-                    if let Some(container) = document.query_selector(".columns-container").ok().flatten() {
+                    if let Some(container) =
+                        document.query_selector(".columns-container").ok().flatten()
+                    {
                         let container: web_sys::Element = container;
                         container.set_scroll_left(container.scroll_width());
                     }
@@ -318,7 +380,9 @@ pub fn App() -> impl IntoView {
             if let Some(column) = columns.get().get(col_index) {
                 let items = &column.contents.items;
                 if let Some(current_focused) = focused_item.get() {
-                    if let Some(current_index) = items.iter().position(|item| item.path == current_focused) {
+                    if let Some(current_index) =
+                        items.iter().position(|item| item.path == current_focused)
+                    {
                         if current_index > 0 {
                             let new_focused = &items[current_index - 1];
                             set_focused_item.set(Some(new_focused.path.clone()));
@@ -352,7 +416,9 @@ pub fn App() -> impl IntoView {
             if let Some(column) = columns.get().get(col_index) {
                 let items = &column.contents.items;
                 if let Some(current_focused) = focused_item.get() {
-                    if let Some(current_index) = items.iter().position(|item| item.path == current_focused) {
+                    if let Some(current_index) =
+                        items.iter().position(|item| item.path == current_focused)
+                    {
                         if current_index < items.len() - 1 {
                             let new_focused = &items[current_index + 1];
                             set_focused_item.set(Some(new_focused.path.clone()));
@@ -370,7 +436,7 @@ pub fn App() -> impl IntoView {
         } else if !columns.get().is_empty() {
             // Focus on the first column if no column is focused
             set_focused_column_index.set(Some(0));
-            if let Some(column) = columns.get().get(0) {
+            if let Some(column) = columns.get().first() {
                 if !column.contents.items.is_empty() {
                     let first_item = &column.contents.items[0];
                     set_focused_item.set(Some(first_item.path.clone()));
@@ -385,13 +451,14 @@ pub fn App() -> impl IntoView {
             if col_index > 0 {
                 let new_col_index = col_index - 1;
                 set_focused_column_index.set(Some(new_col_index));
-                
+
                 // Try to maintain the same item name if possible
                 if let Some(current_focused) = focused_item.get() {
                     if let Some(current_name) = std::path::Path::new(&current_focused).file_name() {
                         if let Some(column) = columns.get().get(new_col_index) {
-                            if let Some(matching_item) = column.contents.items.iter()
-                                .find(|item| std::path::Path::new(&item.path).file_name() == Some(current_name)) {
+                            if let Some(matching_item) = column.contents.items.iter().find(|item| {
+                                std::path::Path::new(&item.path).file_name() == Some(current_name)
+                            }) {
                                 set_focused_item.set(Some(matching_item.path.clone()));
                                 scroll_to_focused_item();
                                 return;
@@ -399,7 +466,7 @@ pub fn App() -> impl IntoView {
                         }
                     }
                 }
-                
+
                 // If no matching item, focus on first item in the column
                 if let Some(column) = columns.get().get(new_col_index) {
                     if !column.contents.items.is_empty() {
@@ -417,13 +484,14 @@ pub fn App() -> impl IntoView {
             if col_index < columns.get().len() - 1 {
                 let new_col_index = col_index + 1;
                 set_focused_column_index.set(Some(new_col_index));
-                
+
                 // Try to maintain the same item name if possible
                 if let Some(current_focused) = focused_item.get() {
                     if let Some(current_name) = std::path::Path::new(&current_focused).file_name() {
                         if let Some(column) = columns.get().get(new_col_index) {
-                            if let Some(matching_item) = column.contents.items.iter()
-                                .find(|item| std::path::Path::new(&item.path).file_name() == Some(current_name)) {
+                            if let Some(matching_item) = column.contents.items.iter().find(|item| {
+                                std::path::Path::new(&item.path).file_name() == Some(current_name)
+                            }) {
                                 set_focused_item.set(Some(matching_item.path.clone()));
                                 scroll_to_focused_item();
                                 return;
@@ -431,7 +499,7 @@ pub fn App() -> impl IntoView {
                         }
                     }
                 }
-                
+
                 // If no matching item, focus on first item in the column
                 if let Some(column) = columns.get().get(new_col_index) {
                     if !column.contents.items.is_empty() {
@@ -454,23 +522,27 @@ pub fn App() -> impl IntoView {
                         load_directory_column(path.clone(), Some(col_index + 1));
                         set_selected_item.set(Some(path.clone()));
                         set_selected_column_index.set(Some(col_index));
-                        
+
                         // Immediately set focus to the new column
                         let new_col_index = col_index + 1;
                         set_focused_column_index.set(Some(new_col_index));
-                        
+
                         // Focus on first item in new column after it loads
                         spawn_local(async move {
                             // Wait a bit for the new column to load
-                            wasm_bindgen_futures::JsFuture::from(
-                                js_sys::Promise::new(&mut |resolve, _| {
+                            wasm_bindgen_futures::JsFuture::from(js_sys::Promise::new(
+                                &mut |resolve, _| {
                                     web_sys::window()
                                         .unwrap()
-                                        .set_timeout_with_callback_and_timeout_and_arguments_0(&resolve, 100)
+                                        .set_timeout_with_callback_and_timeout_and_arguments_0(
+                                            &resolve, 100,
+                                        )
                                         .unwrap();
-                                })
-                            ).await.unwrap();
-                            
+                                },
+                            ))
+                            .await
+                            .unwrap();
+
                             if let Some(new_column) = columns.get().get(new_col_index) {
                                 if !new_column.contents.items.is_empty() {
                                     let first_item = &new_column.contents.items[0];
@@ -491,7 +563,7 @@ pub fn App() -> impl IntoView {
     // Keyboard navigation handlers
     let handle_keyboard_navigation = move |e: KeyboardEvent| {
         let key = e.key();
-        
+
         match key.as_str() {
             "ArrowUp" => {
                 e.prevent_default();
@@ -524,12 +596,22 @@ pub fn App() -> impl IntoView {
         }
     };
 
+    // Theme toggle function
+    let toggle_theme = move |_: MouseEvent| {
+        let current_theme = theme.get();
+        let new_theme = match current_theme.as_str() {
+            "light" => "dark",
+            _ => "light", // "dark" or any other value goes to "light"
+        };
+        set_theme.set(new_theme.to_string());
+    };
+
     let toggle_sidebar = move |_: MouseEvent| {
         set_sidebar_collapsed.update(|collapsed| *collapsed = !*collapsed);
     };
 
     view! {
-        <div 
+        <div
             class="finder-app"
             tabindex="0"
             on:keydown=handle_keyboard_navigation
@@ -547,8 +629,8 @@ pub fn App() -> impl IntoView {
                             <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
                         </svg>
                     </button>
-                    
-                    <button 
+
+                    <button
                         class="toolbar-btn"
                         on:click=move |_| set_show_new_folder_dialog.set(true)
                         title="New Folder"
@@ -565,7 +647,7 @@ pub fn App() -> impl IntoView {
                 </div>
                 <div class="toolbar-right">
                     <div class="search-container">
-                        <input 
+                        <input
                             type="text"
                             class="search-input"
                             placeholder="Search files..."
@@ -589,7 +671,7 @@ pub fn App() -> impl IntoView {
                                 }
                             }
                         />
-                        <button 
+                        <button
                             class="search-btn"
                             on:click=move |_| {
                                 let query = search_query.get();
@@ -617,7 +699,7 @@ pub fn App() -> impl IntoView {
                         {move || {
                             if search_mode.get() {
                                 view! {
-                                    <button 
+                                    <button
                                         class="clear-search-btn"
                                         on:click=move |_| {
                                             set_search_mode.set(false);
@@ -636,7 +718,43 @@ pub fn App() -> impl IntoView {
                             }
                         }}
                     </div>
-                    
+
+                    <button
+                        class="toolbar-btn theme-btn"
+                        on:click=toggle_theme
+                        title=move || {
+                            match theme.get().as_str() {
+                                "light" => "Switch to Dark Mode",
+                                _ => "Switch to Light Mode"
+                            }
+                        }
+                    >
+                        {move || {
+                            match theme.get().as_str() {
+                                "light" => view! {
+                                    // Sun icon
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="5"/>
+                                        <line x1="12" y1="1" x2="12" y2="3"/>
+                                        <line x1="12" y1="21" x2="12" y2="23"/>
+                                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                        <line x1="1" y1="12" x2="3" y2="12"/>
+                                        <line x1="21" y1="12" x2="23" y2="12"/>
+                                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                                    </svg>
+                                }.into_any(),
+                                _ => view! {
+                                    // Moon icon
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                                    </svg>
+                                }.into_any()
+                            }
+                        }}
+                    </button>
+
                     <button class="toolbar-btn view-btn active">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/>
@@ -691,17 +809,17 @@ pub fn App() -> impl IntoView {
                 // Content area with file list and preview panel
                 <div class="content-area">
                     // File list area
-                    <div 
+                    <div
                         class="file-list-container"
                         style=move || format!("transform: scale({}); transform-origin: top left;", zoom_level.get())
                         on:wheel=move |e| {
                             // Check if Ctrl/Cmd key is pressed for zoom
                             if e.ctrl_key() || e.meta_key() {
                                 e.prevent_default();
-                                
+
                                 let delta_y = e.delta_y();
                                 let current_zoom = zoom_level.get();
-                                
+
                                 let new_zoom = if delta_y > 0.0 {
                                     // Zoom out
                                     (current_zoom - zoom_step).max(min_zoom)
@@ -709,7 +827,7 @@ pub fn App() -> impl IntoView {
                                     // Zoom in
                                     (current_zoom + zoom_step).min(max_zoom)
                                 };
-                                
+
                                 set_zoom_level.set(new_zoom);
                             }
                             // If no modifier keys, allow normal scrolling
@@ -747,7 +865,7 @@ pub fn App() -> impl IntoView {
                                                 let _item_name = item.name.clone();
                                                 let is_dir = item.is_dir;
                                                 view! {
-                                                    <div 
+                                                    <div
                                                         class="file-item"
                                                         class:selected=move || selected_item.get() == Some(item_path.clone())
                                                         class:focused=move || focused_item.get() == Some(item_path_focused.clone())
@@ -844,14 +962,14 @@ pub fn App() -> impl IntoView {
                                                             let is_dir = item.is_dir;
                                                             let current_col_index = col_index;
                                                             view! {
-                                                                <div 
+                                                                <div
                                                                     class="file-item"
                                                                     class:selected=move || {
-                                                                        selected_item.get() == Some(item_path.clone()) && 
+                                                                        selected_item.get() == Some(item_path.clone()) &&
                                                                         selected_column_index.get() == Some(current_col_index)
                                                                     }
                                                                     class:focused=move || {
-                                                                        focused_item.get() == Some(item_path_focused.clone()) && 
+                                                                        focused_item.get() == Some(item_path_focused.clone()) &&
                                                                         focused_column_index.get() == Some(current_col_index)
                                                                     }
                                                                     tabindex="0"
@@ -859,14 +977,14 @@ pub fn App() -> impl IntoView {
                                                                         set_selected_item.set(Some(item_path_click.clone()));
                                                                         set_selected_column_index.set(Some(current_col_index));
                                                                         set_context_menu_visible.set(false);
-                                                                        
+
                                                                         // If it's a file, truncate columns after current column and add preview
                                                                         if !is_dir {
                                                                             set_columns.update(|cols| {
                                                                                 // Remove all columns after the current one
                                                                                 cols.truncate(current_col_index + 1);
                                                                             });
-                                                                            
+
                                                                             // Scroll to rightmost column (which will include the preview)
                                                                             scroll_to_rightmost_column();
                                                                         }
@@ -875,13 +993,13 @@ pub fn App() -> impl IntoView {
                                                         if is_dir {
                                                             let new_col_index = current_col_index + 1;
                                                             load_directory_column(item_path_dblclick.clone(), Some(new_col_index));
-                                                            
+
                                                             // Set focus to the new column
                                                             set_focused_column_index.set(Some(new_col_index));
-                                                            
+
                                                             // Scroll to rightmost column
                                                             scroll_to_rightmost_column();
-                                                            
+
                                                             // Focus on first item in new column after it loads
                                                             spawn_local(async move {
                                                                 // Wait a bit for the new column to load
@@ -893,7 +1011,7 @@ pub fn App() -> impl IntoView {
                                                                             .unwrap();
                                                                     })
                                                                 ).await.unwrap();
-                                                                
+
                                                                 if let Some(new_column) = columns.get().get(new_col_index) {
                                                                     if !new_column.contents.items.is_empty() {
                                                                         let first_item = &new_column.contents.items[0];
@@ -934,7 +1052,7 @@ pub fn App() -> impl IntoView {
                                             </div>
                                         }
                                     }).collect::<Vec<_>>()}
-                                    
+
                                     // Add preview column when a file is selected
                                     {move || {
                                         if let Some(selected_path) = selected_item.get() {
@@ -1011,7 +1129,7 @@ pub fn App() -> impl IntoView {
                                                                                  "image" => {
                                                                                      view! {
                                                                                          <div class="image-preview">
-                                                                                             <img 
+                                                                                             <img
                                                                                                  src=format!("data:image/*;base64,{}", preview.content)
                                                                                                  alt="Preview"
                                                                                                  class="image-content"
@@ -1044,13 +1162,13 @@ pub fn App() -> impl IntoView {
                                                                         }.into_any()
                                                                     }
                                                                 }}
-                                                                
+
                                                                 // File info section
                                                                 <div class="file-info">
                                                                     {move || {
                                                                         if let Some(selected_path) = selected_item.get() {
-                                                                            let filename = selected_path.split('/').last().unwrap_or("").to_string();
-                                                                            
+                                                                            let filename = selected_path.split('/').next_back().unwrap_or("").to_string();
+
                                                                             // Get item info for file details
                                                                             let item_info = if let Some(col_index) = selected_column_index.get() {
                                                                                 if let Some(column) = columns.get().get(col_index) {
@@ -1168,7 +1286,7 @@ pub fn App() -> impl IntoView {
                         <div class="dialog-overlay" on:click=move |_| set_show_rename_dialog.set(false)>
                             <div class="dialog" on:click=move |e| e.stop_propagation()>
                                 <h3>"Rename Item"</h3>
-                                <input 
+                                <input
                                     type="text"
                                     placeholder="New name"
                                     prop:value=move || rename_item_name.get()
@@ -1225,7 +1343,7 @@ pub fn App() -> impl IntoView {
                 if context_menu_visible.get() {
                     let (x, y) = context_menu_pos.get();
                     view! {
-                        <div 
+                        <div
                             class="context-menu"
                             style=format!("left: {}px; top: {}px;", x, y)
                             on:click=move |_| set_context_menu_visible.set(false)
@@ -1248,7 +1366,7 @@ pub fn App() -> impl IntoView {
                             }>
                                 "Cut"
                             </div>
-                            <div 
+                            <div
                                 class="context-menu-item"
                                 class:disabled=move || clipboard_item.get().is_none()
                                 on:click=move |_| {
@@ -1277,7 +1395,7 @@ pub fn App() -> impl IntoView {
                             <div class="context-menu-item" on:click=move |_| {
                                 if let Some(path) = selected_item.get() {
                                     // Extract filename from path for initial value
-                                    let filename = path.split('/').last().unwrap_or("").to_string();
+                                    let filename = path.split('/').next_back().unwrap_or("").to_string();
                                     set_rename_item_name.set(filename);
                                     set_rename_item_path.set(path);
                                     set_show_rename_dialog.set(true);
@@ -1311,7 +1429,7 @@ pub fn App() -> impl IntoView {
                         <div class="dialog-overlay" on:click=move |_| set_show_new_folder_dialog.set(false)>
                             <div class="dialog" on:click=move |e| e.stop_propagation()>
                                 <h3>"New Folder"</h3>
-                                <input 
+                                <input
                                     type="text"
                                     placeholder="Folder name"
                                     prop:value=move || new_folder_name.get()
@@ -1343,9 +1461,9 @@ pub fn App() -> impl IntoView {
                 }
             }}
         </div>
-        
+
         // Click outside to close context menu
-        <div 
+        <div
             class="click-overlay"
             style=format!("display: {}", if context_menu_visible.get() { "block" } else { "none" })
             on:click=move |_| set_context_menu_visible.set(false)

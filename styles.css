@@ -1,38 +1,84 @@
 /* Mac Finder Style File Manager */
 :root {
-  --bg-primary: #f6f6f6;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #f0f0f0;
-  --text-primary: #1d1d1f;
-  --text-secondary: #6e6e73;
-  --text-tertiary: #8e8e93;
-  --border-color: #d2d2d7;
-  --accent-blue: #007aff;
-  --accent-blue-hover: #0056cc;
-  --sidebar-bg: #f5f5f7;
-  --toolbar-bg: #ebebeb;
-  --shadow-light: rgba(0, 0, 0, 0.1);
-  --shadow-medium: rgba(0, 0, 0, 0.15);
   --border-radius: 8px;
   --border-radius-small: 4px;
   --transition: all 0.2s ease;
 }
 
+/* Light Theme */
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-tertiary: #e9ecef;
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --text-muted: #adb5bd;
+    --border-color: #dee2e6;
+    --accent-color: #007bff;
+    --hover-color: #e9ecef;
+    --selected-color: #e3f2fd;
+    --focused-color: #bbdefb;
+    --error-color: #dc3545;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+  --bg-primary: #1c1c1e;
+  --bg-secondary: #2c2c2e;
+  --bg-tertiary: #3a3a3c;
+  --text-primary: #ffffff;
+  --text-secondary: #ebebf5;
+  --text-muted: #8e8e93;
+  --border-color: #38383a;
+  --accent-color: #0a84ff;
+  --hover-color: #3a3a3c;
+  --selected-color: #1e3a5f;
+  --focused-color: #2d5aa0;
+  --error-color: #ff453a;
+  --success-color: #30d158;
+  --warning-color: #ff9f0a;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Auto Theme (follows system preference) */
+[data-theme="auto"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --text-muted: #adb5bd;
+  --border-color: #dee2e6;
+  --accent-color: #007bff;
+  --hover-color: #e9ecef;
+  --selected-color: #e3f2fd;
+  --focused-color: #bbdefb;
+  --error-color: #dc3545;
+  --success-color: #28a745;
+  --warning-color: #ffc107;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  [data-theme="auto"] {
     --bg-primary: #1c1c1e;
     --bg-secondary: #2c2c2e;
     --bg-tertiary: #3a3a3c;
     --text-primary: #ffffff;
     --text-secondary: #ebebf5;
-    --text-tertiary: #8e8e93;
+    --text-muted: #8e8e93;
     --border-color: #38383a;
-    --accent-blue: #0a84ff;
-    --accent-blue-hover: #409cff;
-    --sidebar-bg: #28282a;
-    --toolbar-bg: #323234;
-    --shadow-light: rgba(0, 0, 0, 0.3);
-    --shadow-medium: rgba(0, 0, 0, 0.4);
+    --accent-color: #0a84ff;
+    --hover-color: #3a3a3c;
+    --selected-color: #1e3a5f;
+    --focused-color: #2d5aa0;
+    --error-color: #ff453a;
+    --success-color: #30d158;
+    --warning-color: #ff9f0a;
+    --shadow-color: rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -66,7 +112,7 @@ body {
   display: flex;
   align-items: center;
   height: 40px;
-  background-color: var(--toolbar-bg);
+  background-color: var(--bg-tertiary);
   border-bottom: 1px solid var(--border-color);
   padding: 0 12px;
   gap: 8px;
@@ -105,8 +151,30 @@ body {
 }
 
 .toolbar-btn.active {
-  background-color: var(--accent-blue);
+  background-color: var(--accent-color);
   color: white;
+}
+
+.toolbar-btn.theme-btn {
+  position: relative;
+}
+
+.toolbar-btn.theme-btn:hover {
+  background: var(--bg-tertiary);
+}
+
+.toolbar-btn.theme-btn svg {
+    transition: all 0.1s ease;
+}
+
+.toolbar-btn.theme-btn:hover svg {
+    transform: scale(1.1) rotate(15deg);
+    color: var(--accent-color);
+    transition-delay: 0s;
+}
+
+.toolbar-btn.theme-btn:active svg {
+    transform: scale(0.95) rotate(0deg);
 }
 
 .path-bar {
@@ -144,12 +212,12 @@ body {
 
 .search-input:focus {
   outline: none;
-  border-color: var(--accent-blue);
+  border-color: var(--accent-color);
   box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
 }
 
 .search-input::placeholder {
-  color: var(--text-tertiary);
+  color: var(--text-muted);
 }
 
 .search-btn, .clear-search-btn {
@@ -172,7 +240,7 @@ body {
 }
 
 .clear-search-btn {
-  color: var(--text-tertiary);
+  color: var(--text-muted);
 }
 
 .clear-search-btn:hover {
@@ -189,7 +257,7 @@ body {
 /* Sidebar */
 .sidebar {
   width: 220px;
-  background-color: var(--sidebar-bg);
+  background-color: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
   padding: 12px 0;
   overflow-y: auto;
@@ -209,7 +277,7 @@ body {
 .sidebar-title {
   font-size: 11px;
   font-weight: 600;
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding: 0 16px 8px;
@@ -289,7 +357,7 @@ body {
 }
 
 .columns-container::-webkit-scrollbar-thumb:hover {
-    background: var(--text-tertiary);
+    background: var(--text-muted);
 }
 
 /* Miller Columns container */
@@ -354,8 +422,8 @@ body {
     width: 320px;
     min-width: 320px;
     max-width: 320px;
-    background: #2a2a2a;
-    border-left: 1px solid #404040;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -366,8 +434,8 @@ body {
     width: 380px;
     min-width: 380px;
     max-width: 380px;
-    background: #2a2a2a;
-    border-left: 1px solid #404040;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -388,7 +456,7 @@ body {
     align-items: center;
     justify-content: center;
     height: 100%;
-    color: #888;
+    color: var(--text-muted);
     text-align: center;
     padding: 32px;
 }
@@ -396,7 +464,7 @@ body {
 .no-selection svg {
     margin-bottom: 16px;
     opacity: 0.5;
-    color: #666;
+    color: var(--text-muted);
 }
 
 .no-selection span {
@@ -414,8 +482,8 @@ body {
 
 .text-content {
     flex: 1;
-    background: #1e1e1e;
-    border: 1px solid #404040;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
     border-radius: 6px;
     padding: 12px;
     font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
@@ -424,7 +492,7 @@ body {
     overflow: auto;
     white-space: pre-wrap;
     word-wrap: break-word;
-    color: #e0e0e0;
+    color: var(--text-primary);
 }
 
 .image-preview {
@@ -442,7 +510,7 @@ body {
     max-height: 100%;
     object-fit: contain;
     border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 8px var(--shadow-medium);
 }
 
 .unsupported-preview {
@@ -451,7 +519,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #888;
+    color: var(--text-muted);
     text-align: center;
     margin-bottom: 16px;
 }
@@ -459,7 +527,7 @@ body {
 .unsupported-preview svg {
     margin-bottom: 16px;
     opacity: 0.5;
-    color: #666;
+    color: var(--text-muted);
 }
 
 .unsupported-preview p {
@@ -473,15 +541,15 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #888;
+    color: var(--text-muted);
     margin-bottom: 16px;
 }
 
 .preview-loading .loading-spinner {
     width: 24px;
     height: 24px;
-    border: 2px solid #404040;
-    border-top: 2px solid #007AFF;
+    border: 2px solid var(--border-color);
+    border-top: 2px solid var(--accent-blue);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-bottom: 12px;
@@ -520,7 +588,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #888;
+    color: var(--text-muted);
     text-align: center;
     margin-bottom: 16px;
 }
@@ -528,7 +596,7 @@ body {
 .preview-empty svg {
     margin-bottom: 16px;
     opacity: 0.5;
-    color: #666;
+    color: var(--text-muted);
 }
 
 .preview-empty span {
@@ -537,9 +605,9 @@ body {
 
 /* File info section */
 .file-info {
-    border-top: 1px solid #404040;
+    border-top: 1px solid var(--border-color);
     padding-top: 16px;
-    background: #1e1e1e;
+    background: var(--bg-primary);
     border-radius: 8px;
     padding: 16px;
     margin-top: auto;
@@ -549,7 +617,7 @@ body {
     margin: 0 0 12px 0;
     font-size: 16px;
     font-weight: 600;
-    color: #e0e0e0;
+    color: var(--text-primary);
     word-break: break-all;
 }
 
@@ -567,13 +635,13 @@ body {
 }
 
 .detail-item .label {
-    color: #888;
+    color: var(--text-muted);
     font-weight: 500;
     min-width: 60px;
 }
 
 .detail-item .value {
-    color: #e0e0e0;
+    color: var(--text-primary);
     font-weight: 400;
     text-align: right;
     word-break: break-all;
@@ -613,7 +681,7 @@ body {
   width: 32px;
   height: 32px;
   border: 3px solid var(--border-color);
-  border-top: 3px solid var(--accent-blue);
+  border-top: 3px solid var(--accent-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -676,7 +744,7 @@ body {
   border-bottom: 1px solid var(--border-color);
   font-size: 11px;
   font-weight: 600;
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -725,7 +793,7 @@ body {
 
 .file-path {
   font-size: 11px;
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -778,7 +846,7 @@ body {
 }
 
 .empty svg {
-  color: var(--text-tertiary);
+  color: var(--text-muted);
 }
 
 .empty h3 {
@@ -800,7 +868,7 @@ body {
   align-items: center;
   justify-content: space-between;
   height: 22px;
-  background-color: var(--toolbar-bg);
+  background-color: var(--bg-tertiary);
   border-top: 1px solid var(--border-color);
   padding: 0 12px;
   font-size: 11px;
@@ -905,7 +973,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--text-tertiary);
+  background: var(--text-muted);
   border-radius: 6px;
   border: 2px solid var(--bg-tertiary);
 }
@@ -921,25 +989,25 @@ body {
 /* Firefox scrollbar styling */
 * {
   scrollbar-width: auto;
-  scrollbar-color: var(--text-tertiary) var(--bg-tertiary);
+  scrollbar-color: var(--text-muted) var(--bg-tertiary);
 }
 
 /* Focus and Selection States */
 .file-item:focus,
 .toolbar-btn:focus,
 .sidebar-item:focus {
-  outline: 2px solid var(--accent-blue);
+  outline: 2px solid var(--accent-color);
   outline-offset: -2px;
 }
 
 .file-item.focused {
-  outline: 2px solid var(--accent-blue);
+  outline: 2px solid var(--accent-color);
   outline-offset: -2px;
   background-color: rgba(0, 122, 255, 0.1);
 }
 
 .file-item.selected {
-  background-color: var(--accent-blue);
+  background-color: var(--accent-color);
   color: white;
 }
 
@@ -970,18 +1038,18 @@ body {
 }
 
 .context-menu-item:hover {
-  background-color: var(--accent-blue);
+  background-color: var(--accent-color);
   color: white;
 }
 
 .context-menu-item.disabled {
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   cursor: not-allowed;
 }
 
 .context-menu-item.disabled:hover {
   background-color: transparent;
-  color: var(--text-tertiary);
+  color: var(--text-muted);
 }
 
 .context-menu-separator {
@@ -1034,7 +1102,7 @@ body {
 
 .dialog input:focus {
   outline: none;
-  border-color: var(--accent-blue);
+  border-color: var(--accent-color);
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
@@ -1056,9 +1124,9 @@ body {
 }
 
 .dialog-buttons button:last-child {
-  background: var(--accent-blue);
+  background: var(--accent-color);
   color: white;
-  border-color: var(--accent-blue);
+  border-color: var(--accent-color);
 }
 
 .dialog-buttons button:hover {

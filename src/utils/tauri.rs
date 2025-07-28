@@ -9,13 +9,13 @@ extern "C" {
 // Check if we're running in Tauri environment
 pub fn is_tauri_available() -> bool {
     use wasm_bindgen::JsValue;
-    
+
     // Safe window access
     let window = match web_sys::window() {
         Some(w) => w,
         None => return false,
     };
-    
+
     let tauri = js_sys::Reflect::get(&window, &JsValue::from_str("__TAURI__"));
     match tauri {
         Ok(value) => !value.is_null() && !value.is_undefined(),
