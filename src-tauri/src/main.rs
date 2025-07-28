@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    fsm_finder_lib::run()
+    s3_finder_lib::run()
 }

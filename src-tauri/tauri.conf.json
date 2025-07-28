@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "fsm-finder",
+  "productName": "s3-finder",
   "version": "0.1.0",
-  "identifier": "com.dandan.fsm-finder",
+  "identifier": "com.dandan.s3-finder",
   "build": {
     "beforeDevCommand": "trunk serve",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "fsm-finder",
+        "title": "s3-finder",
         "width": 1200,
         "height": 800,
         "minWidth": 900,
