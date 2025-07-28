@@ -34,6 +34,10 @@ A modern, cross-platform S3 object storage manager built with Rust, Tauri, and L
 - **Language**: Rust - Memory-safe systems programming language
 - **Build Tool**: [Trunk](https://trunkrs.dev/) - WASM web application bundler
 
+## TODO
+
+See [TODO.md](./TODO.md) for detailed development roadmap and task breakdown.
+
 ## Getting Started
 
 ### Prerequisites
