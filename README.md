@@ -1,3 +1,5 @@
+[![S3 Finder](./asset/s3-finder-logo.png)](https://github.com/your-username/s3-finder)
+
 # S3 Finder
 
 A modern, cross-platform S3 object storage manager built with Rust, Tauri, and Leptos. S3 Finder provides an intuitive Miller column interface that allows you to manage S3 objects just like local files, with seamless interoperability between local and cloud storage.
